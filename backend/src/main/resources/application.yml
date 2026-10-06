@@ -1,0 +1,16 @@
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/seatflow}
+    username: ${DB_USER:seatflow}
+    password: ${DB_PASSWORD:seatflow_local}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+server:
+  error:
+    include-message: never
+springdoc:
+  swagger-ui:
+    path: /docs

@@ -1,0 +1,8 @@
+package ma.seatflow.event;
+import java.util.*;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.web.bind.annotation.*;
+@RestController @RequestMapping("/api/events") public class EventController {private final JdbcTemplate db;public EventController(JdbcTemplate db){this.db=db;}
+ @GetMapping public List<Map<String,Object>> all(){return db.queryForList("SELECT e.id,e.title,e.description,e.starts_at,e.ends_at,e.status,h.name AS hall, v.name AS venue, (SELECT min(price) FROM event_seat WHERE event_id=e.id) AS min_price FROM event e JOIN hall h ON h.id=e.hall_id JOIN venue v ON v.id=h.venue_id ORDER BY e.starts_at");}
+ @GetMapping("/{id}") public Map<String,Object> one(@PathVariable long id){var e=db.queryForMap("SELECT e.id,e.title,e.description,e.starts_at,e.ends_at,e.status,e.public_opens_at,e.priority_opens_at,h.name AS hall FROM event e JOIN hall h ON h.id=e.hall_id WHERE e.id=?",id);e.put("seats",db.queryForList("SELECT es.id,es.seat_id,s.row_label,s.number,s.x,s.y,s.accessible,c.name AS sector,es.price,CASE WHEN es.status='AVAILABLE' AND EXISTS(SELECT 1 FROM seat_hold sh WHERE sh.event_seat_id=es.id AND sh.status='ACTIVE' AND sh.expires_at>now()) THEN 'HELD' ELSE es.status END AS status FROM event_seat es JOIN seat s ON s.id=es.seat_id JOIN sector c ON c.id=s.sector_id WHERE es.event_id=? ORDER BY es.id",id));return e;}
+}
