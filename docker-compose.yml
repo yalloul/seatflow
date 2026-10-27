@@ -21,7 +21,7 @@ services:
       DEMO_PASSWORD: ${DEMO_PASSWORD:-demo1234}
     ports: ["8080:8080"]
     depends_on:
-      db: {condition: service_healthy}
+      db: { condition: service_healthy }
   web:
     build: ./frontend
     ports: ["5173:5173"]

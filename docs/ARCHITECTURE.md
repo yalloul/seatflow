@@ -6,7 +6,8 @@
 
 ```mermaid
 flowchart LR
- UI[Next.js / React / SVG] -->|REST| API[Spring Boot]
+ UI[Angular / SVG] -->|REST et cookie de session| PROXY[Nginx ou proxy Angular]
+ PROXY --> API[Spring Boot]
  API -->|JDBC transactionnel| PG[(PostgreSQL)]
  API -->|SSE disponibilité| UI
  API --> PAY[Simulateur de paiement local]
@@ -90,16 +91,24 @@ La machine à états des commandes est volontairement réduite : le paiement sim
 
 Les instants sont des `TIMESTAMPTZ`. L'interface utilise `Africa/Casablanca`. La contrainte d'exclusion GiST empêche le chevauchement des périodes occupées, préparation et libération incluses, même sous concurrence. Deux salles distinctes ne se bloquent pas. SSE annonce un changement ; le frontend relit REST après l'événement ou la reconnexion. PostgreSQL reste la source de vérité.
 
-HTTP Basic avec comptes en mémoire est acceptable uniquement pour cette démonstration locale. Les permissions backend sont contrôlées par Spring Security. Pour une application exposée, remplacer par une session serveur avec cookie `HttpOnly`, `Secure`, `SameSite` et protection CSRF, persister les comptes et ajouter TLS. Les secrets sont configurables par variables d'environnement ; la valeur de développement par défaut ne doit jamais être déployée.
+L’authentification utilise une session Spring Security avec cookie `JSESSIONID` HttpOnly et SameSite=Lax, et un cookie `XSRF-TOKEN` que `HttpClient` Angular transmet dans `X-XSRF-TOKEN` pour les mutations. Le mot de passe n’est pas enregistré dans le navigateur. Les guards Angular facilitent la navigation ; Spring Security impose les permissions serveur. Les comptes et les sessions sont en mémoire. Une exposition publique demanderait notamment TLS, cookie Secure, comptes persistants et gestion des secrets adaptée. Les valeurs de démonstration restent locales.
 
 ## Décisions et limites
 
-| Choix | Alternative | Raison |
-|---|---|---|
-| Monolithe modulaire | Microservices | Transactions entre réservation et billet simples |
-| Verrou de ligne PostgreSQL | Redis seul | La base impose l'invariant durable |
-| SSE | WebSocket | Diffusion unidirectionnelle suffisante |
-| JDBC explicite | JPA pour chaque requête | SQL de verrouillage et contraintes faciles à auditer |
-| Paiement synchrone simulé | Prestataire réel | Démonstration sans argent réel |
+| Choix                      | Alternative             | Raison                                               |
+| -------------------------- | ----------------------- | ---------------------------------------------------- |
+| Monolithe modulaire        | Microservices           | Transactions entre réservation et billet simples     |
+| Verrou de ligne PostgreSQL | Redis seul              | La base impose l'invariant durable                   |
+| SSE                        | WebSocket               | Diffusion unidirectionnelle suffisante               |
+| JDBC explicite             | JPA pour chaque requête | SQL de verrouillage et contraintes faciles à auditer |
+| Paiement synchrone simulé  | Prestataire réel        | Démonstration sans argent réel                       |
 
-Les opérations de modification des salles, cession de billet, annulation et déplacement d'événement, callbacks de paiement, comptes persistants et production sécurisée restent des évolutions. Le frontend ne propose pas encore de formulaire de création d'événement, même si l'API existe.
+Les opérations de modification des salles, cession de billet, annulation et déplacement d'événement, callbacks de paiement, comptes persistants et production sécurisée restent des évolutions. Le frontend Angular propose la création d’événement et l’acquisition des formules d’abonnement. Les salles et saisons existantes sont consultables ; leur gestion complète reste à développer.
+
+## Frontend Angular
+
+Les composants standalone sont répartis par écran dans `features`. `ApiService` centralise les contrats HTTP typés, `AuthService` rétablit la session avant le routage, et `AvailabilityService` partage un flux SSE. Les signals portent l’état local et les formulaires réactifs encadrent les saisies. Les routes chargent les écrans à la demande. Le guide pédagogique est dans `ANGULAR_GUIDE.md`.
+
+V4 ajoute les chemins d’image, les paramètres d’idempotence et l’état `RELEASED` des blocages. V5 attribue les billets manquants aux abonnements fixes existants. Un billet d’abonnement n’a pas d’article de commande : son droit vient de `season_seat_assignment`. Les nouveaux billets sont attribués dans la transaction d’achat de formule ou de création d’événement éligible.
+
+Le frontend relit les blocages actifs du compte depuis l’API. Une clé d’idempotence est associée à chaque token et au résultat demandé. Les expirations critiques sont revérifiées après acquisition des verrous avec `clock_timestamp()` ; les notifications SSE partent après commit. Le rafraîchissement périodique du plan couvre les expirations sans événement SSE.

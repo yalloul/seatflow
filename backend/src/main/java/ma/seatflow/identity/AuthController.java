@@ -10,12 +10,23 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
-    @GetMapping("/csrf")
-    public Map<String, String> csrf(CsrfToken token) { return Map.of("token", token.getToken()); }
 
-    @GetMapping("/me")
-    public Map<String, Object> me(Authentication authentication) {
-        return Map.of("username", authentication.getName(), "roles", authentication.getAuthorities().stream()
-            .map(authority -> authority.getAuthority().replace("ROLE_", "")).toList());
-    }
+  @GetMapping("/csrf")
+  public Map<String, String> csrf(CsrfToken token) {
+    return Map.of("token", token.getToken());
+  }
+
+  @GetMapping("/me")
+  public Map<String, Object> me(Authentication authentication) {
+    return Map.of(
+      "username",
+      authentication.getName(),
+      "roles",
+      authentication
+        .getAuthorities()
+        .stream()
+        .map(authority -> authority.getAuthority().replace("ROLE_", ""))
+        .toList()
+    );
+  }
 }

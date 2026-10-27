@@ -1,9 +1,70 @@
 package ma.seatflow.ticketing;
+
+import java.security.Principal;
+import java.util.*;
 import ma.seatflow.shared.ApiError.*;
-import java.security.Principal;import java.util.*;
-import org.springframework.jdbc.core.JdbcTemplate;import org.springframework.transaction.annotation.Transactional;import org.springframework.web.bind.annotation.*;
-@RestController @RequestMapping("/api") public class TicketController {private final JdbcTemplate db;public TicketController(JdbcTemplate d){db=d;}private long user(String name){return db.queryForObject("SELECT id FROM app_user WHERE username=?",Long.class,name);}
- @GetMapping("/tickets") public List<Map<String,Object>> mine(Principal p){return db.queryForList("SELECT t.id,t.event_id,e.title,t.code,t.status,s.row_label,s.number FROM ticket t JOIN event e ON e.id=t.event_id JOIN event_seat es ON es.id=t.event_seat_id JOIN seat s ON s.id=es.seat_id WHERE t.owner_id=? ORDER BY t.id DESC",user(p.getName()));}
- public record CheckRequest(UUID code,long eventId){}
- @Transactional @PostMapping("/checkin") public Map<String,Object> check(Principal p,@RequestBody CheckRequest r){var rows=db.queryForList("SELECT t.id,t.event_id,t.status,e.status AS event_status FROM ticket t JOIN event e ON e.id=t.event_id WHERE t.code=? FOR UPDATE OF t",r.code());if(rows.isEmpty())return Map.of("result","INVALID");var t=rows.get(0);if(((Number)t.get("event_id")).longValue()!=r.eventId())return Map.of("result","WRONG_EVENT");if(!"PUBLISHED".equals(t.get("event_status"))||"CANCELLED".equals(t.get("status")))return Map.of("result","CANCELLED");if("USED".equals(t.get("status")))return Map.of("result","ALREADY_USED");long id=((Number)t.get("id")).longValue();db.update("UPDATE ticket SET status='USED' WHERE id=?",id);db.update("INSERT INTO ticket_check_in(ticket_id,checked_by) VALUES(?,?)",id,user(p.getName()));db.update("INSERT INTO audit_entry(actor_id,action,entity_type,entity_id) VALUES(?,'CHECK_IN','TICKET',?)",user(p.getName()),id);return Map.of("result","VALID");}
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api")
+public class TicketController {
+
+  private final JdbcTemplate db;
+
+  public TicketController(JdbcTemplate d) {
+    db = d;
+  }
+
+  private long user(String name) {
+    return db.queryForObject(
+      "SELECT id FROM app_user WHERE username=?",
+      Long.class,
+      name
+    );
+  }
+
+  @GetMapping("/tickets")
+  public List<Map<String, Object>> mine(Principal p) {
+    return db.queryForList(
+      "SELECT t.id,t.event_id,e.title,t.code,t.status,s.row_label,s.number FROM ticket t JOIN event e ON e.id=t.event_id JOIN event_seat es ON es.id=t.event_seat_id JOIN seat s ON s.id=es.seat_id WHERE t.owner_id=? ORDER BY t.id DESC",
+      user(p.getName())
+    );
+  }
+
+  public record CheckRequest(UUID code, long eventId) {}
+
+  @Transactional
+  @PostMapping("/checkin")
+  public Map<String, Object> check(Principal p, @RequestBody CheckRequest r) {
+    var rows = db.queryForList(
+      "SELECT t.id,t.event_id,t.status,e.status AS event_status FROM ticket t JOIN event e ON e.id=t.event_id WHERE t.code=? FOR UPDATE OF t",
+      r.code()
+    );
+    if (rows.isEmpty()) return Map.of("result", "INVALID");
+    var t = rows.get(0);
+    if (((Number) t.get("event_id")).longValue() != r.eventId()) return Map.of(
+      "result",
+      "WRONG_EVENT"
+    );
+    if (
+      !"PUBLISHED".equals(t.get("event_status")) ||
+      "CANCELLED".equals(t.get("status"))
+    ) return Map.of("result", "CANCELLED");
+    if ("USED".equals(t.get("status"))) return Map.of("result", "ALREADY_USED");
+    long id = ((Number) t.get("id")).longValue();
+    db.update("UPDATE ticket SET status='USED' WHERE id=?", id);
+    db.update(
+      "INSERT INTO ticket_check_in(ticket_id,checked_by) VALUES(?,?)",
+      id,
+      user(p.getName())
+    );
+    db.update(
+      "INSERT INTO audit_entry(actor_id,action,entity_type,entity_id) VALUES(?,'CHECK_IN','TICKET',?)",
+      user(p.getName()),
+      id
+    );
+    return Map.of("result", "VALID");
+  }
 }
