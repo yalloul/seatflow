@@ -7,5 +7,7 @@ import java.util.Map;
  @ExceptionHandler(Conflict.class) ResponseEntity<?> conflict(Conflict e){return ResponseEntity.status(409).body(Map.of("error",e.getMessage()));}
  @ExceptionHandler(Bad.class) ResponseEntity<?> bad(Bad e){return ResponseEntity.badRequest().body(Map.of("error",e.getMessage()));}
  @ExceptionHandler(org.springframework.web.bind.MethodArgumentNotValidException.class) ResponseEntity<?> validation(){return ResponseEntity.badRequest().body(Map.of("error","Données invalides"));}
+ @ExceptionHandler(EmptyResultDataAccessException.class) ResponseEntity<?> missing(){return ResponseEntity.status(404).body(Map.of("error","Ressource introuvable"));}
+ @ExceptionHandler({org.springframework.http.converter.HttpMessageNotReadableException.class,org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class,org.springframework.web.bind.MissingRequestHeaderException.class}) ResponseEntity<?> malformed(){return ResponseEntity.badRequest().body(Map.of("error","Requête invalide"));}
  @ExceptionHandler(DataIntegrityViolationException.class) ResponseEntity<?> db(){return ResponseEntity.status(409).body(Map.of("error","Conflit de données"));}
 }

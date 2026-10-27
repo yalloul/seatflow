@@ -23,3 +23,7 @@ Les évolutions de paiement asynchrone, de charge et d’outbox évoquées préc
 - Modifications locales Next.js préexistantes : sauvegardées dans `/private/tmp/seatflow-migration-backup/pre-existing.patch` avant remplacement des fichiers obsolètes.
 - Les captures existantes et les fichiers d’instructions locaux sont conservés.
 - Les migrations Flyway existantes ne seront pas réécrites.
+
+## Jalon API vérifié
+
+Le 27 octobre 2026 : 14 tests backend réussis, 0 échec, 0 erreur, 0 ignoré, sur PostgreSQL 16 Testcontainers. Migrations V1 à V5 appliquées sur des bases vierges. Session serveur, CSRF, rôles, reprise/annulation des blocages, idempotence stricte, images persistées et billets d’abonnement fixe sont implémentés. Le test concurrent ne masque plus les exceptions inattendues comme des conflits métier.
