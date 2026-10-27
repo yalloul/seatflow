@@ -1,0 +1,56 @@
+<a class="skipLink" [routerLink]="[]" fragment="main">Aller au contenu</a>
+<header>
+  <a class="brand" routerLink="/events"
+    ><span class="brandIcon" aria-hidden="true">S</span
+    ><span>SeatFlow<small>RÉSERVEZ VOTRE MOMENT</small></span></a
+  >
+  <nav aria-label="Navigation principale">
+    <a routerLink="/events" routerLinkActive="active">Événements</a>
+    @if (auth.isClient()) {
+      <a routerLink="/orders" routerLinkActive="active">Commandes</a
+      ><a routerLink="/tickets" routerLinkActive="active">Mes billets</a
+      ><a routerLink="/passes" routerLinkActive="active">Abonnements</a>
+    }
+    @if (auth.hasRole("ORGANIZER", "ADMIN")) {
+      <a routerLink="/admin" routerLinkActive="active">Organisateur</a>
+    }
+    @if (auth.hasRole("CHECKER", "ADMIN")) {
+      <a routerLink="/checkin" routerLinkActive="active">Contrôle</a>
+    }
+  </nav>
+  <div class="account">
+    @if (auth.user(); as user) {
+      <span>{{ user.username }}</span
+      ><button (click)="logout()" [disabled]="busy()" aria-label="Déconnexion">
+        Déconnexion ↗
+      </button>
+    } @else {
+      <a routerLink="/login">Connexion →</a>
+    }
+  </div>
+</header>
+<main id="main">
+  @if (notifications.message()) {
+    <div class="notice" role="status">
+      {{ notifications.message()
+      }}<button
+        (click)="notifications.message.set('')"
+        aria-label="Fermer la notification"
+      >
+        ×
+      </button>
+    </div>
+  }
+  @if (!auth.available()) {
+    <div class="error offline" role="alert">
+      L’API est indisponible. Vérifiez que le backend est démarré, puis
+      actualisez la page.
+    </div>
+  }
+  <router-outlet />
+</main>
+<footer>
+  <strong>SeatFlow</strong
+  ><span>Projet académique · Paiement simulé · Prix en MAD</span
+  ><span>Conçu pour une démonstration locale</span>
+</footer>

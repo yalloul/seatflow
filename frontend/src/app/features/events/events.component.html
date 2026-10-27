@@ -1,0 +1,110 @@
+<section class="hero">
+  <div>
+    <p class="eyebrow">BILLETTERIE · SAISON 2027</p>
+    <h1>Des places pour<br /><em>vivre l’instant.</em></h1>
+    <p>
+      Concerts, théâtre et émotions partagées. Choisissez votre place sur le
+      plan, réservez en quelques instants.
+    </p>
+    <a class="primary" [routerLink]="[]" fragment="catalogue"
+      >Explorer les événements <span aria-hidden="true">→</span></a
+    >
+  </div>
+  <div class="heroArt">
+    <img
+      src="/images/seatflow-hero.png"
+      alt="Salle de spectacle illuminée avant un concert"
+      class="heroPhoto"
+      fetchpriority="high"
+    /><span class="visualLabel">Visuel d’illustration</span>
+  </div>
+</section>
+<section id="catalogue" class="section">
+  <div class="sectionHead">
+    <div>
+      <p class="eyebrow">À DÉCOUVRIR</p>
+      <h2>Les événements</h2>
+    </div>
+    <input
+      aria-label="Rechercher un événement ou une salle"
+      placeholder="Rechercher un événement ou une salle"
+      [ngModel]="search()"
+      (ngModelChange)="search.set($event)"
+    />
+  </div>
+  <div class="filters">
+    <label
+      >Salle<select [ngModel]="hall()" (ngModelChange)="hall.set($event)">
+        <option value="">Toutes les salles</option>
+        @for (name of halls(); track name) {
+          <option [value]="name">{{ name }}</option>
+        }
+      </select></label
+    ><label
+      >Date au Maroc<input
+        type="date"
+        [ngModel]="day()"
+        (ngModelChange)="day.set($event)" /></label
+    ><label class="checkbox"
+      ><input
+        type="checkbox"
+        [ngModel]="onlyAvailable()"
+        (ngModelChange)="onlyAvailable.set($event)"
+      />
+      Places disponibles</label
+    >
+  </div>
+  @if (loading()) {
+    <p role="status">Chargement des événements…</p>
+  }
+  @if (error()) {
+    <div class="error" role="alert">
+      {{ error() }} <button class="ghost" (click)="load()">Réessayer</button>
+    </div>
+  }
+  <div class="eventGrid">
+    @for (event of filtered(); track event.id; let i = $index) {
+      <article class="eventCard">
+        <a
+          class="poster"
+          [routerLink]="['/events', event.id]"
+          [attr.aria-label]="'Voir ' + event.title"
+          ><img
+            [src]="event.image_path"
+            [alt]="'Visuel d’illustration pour ' + event.title"
+            loading="lazy"
+            class="posterImage"
+          /><span class="posterNum">{{
+            i + 1 < 10 ? "0" + (i + 1) : i + 1
+          }}</span
+          ><span class="posterText">{{ event.title }}</span></a
+        >
+        <div class="cardBody">
+          <p class="eyebrow">{{ event.starts_at | eventDate }}</p>
+          <h3>{{ event.title }}</h3>
+          <p>{{ event.hall }}</p>
+          <div class="cardFoot">
+            <span
+              >À partir de <strong>{{ event.min_price | mad }}</strong></span
+            ><a
+              class="roundButton"
+              [routerLink]="['/events', event.id]"
+              [attr.aria-label]="'Réserver ' + event.title"
+              >→</a
+            >
+          </div>
+          <p>
+            {{
+              event.status === "CANCELLED"
+                ? "Événement annulé"
+                : event.available_seats + " place(s) disponible(s)"
+            }}
+          </p>
+        </div>
+      </article>
+    }
+  </div>
+  @if (!loading() && !error() && filtered().length === 0) {
+    <p>Aucun événement ne correspond à vos filtres.</p>
+  }
+</section>

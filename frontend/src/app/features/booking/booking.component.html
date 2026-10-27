@@ -1,0 +1,130 @@
+<a class="back" routerLink="/events">← Tous les événements</a>
+@if (loading()) {
+  <section class="section"><p role="status">Chargement du plan…</p></section>
+}
+@if (error()) {
+  <div class="section error" role="alert">
+    {{ error() }} <button class="ghost" (click)="load()">Réessayer</button>
+  </div>
+}
+@if (event(); as event) {
+  <section class="detailTop">
+    <div>
+      <p class="eyebrow">{{ event.hall }} · ÉVÉNEMENT</p>
+      <h1>{{ event.title }}</h1>
+      <p>{{ event.description }}</p>
+      <div class="detailMeta">
+        <span>{{ event.starts_at | eventDate }}</span
+        ><span>{{ event.hall }}</span>
+      </div>
+    </div>
+    <div class="detailVisual">
+      <img
+        [src]="event.image_path"
+        [alt]="'Visuel d’illustration pour ' + event.title"
+      /><span class="visualLabel">Visuel d’illustration</span>
+    </div>
+  </section>
+  @if (event.status === "CANCELLED") {
+    <p class="error section">
+      Cet événement est annulé. Aucune réservation n’est possible.
+    </p>
+  }
+  <div class="bookingGrid">
+    <section class="panel mapPanel">
+      <div class="panelTitle">
+        <div>
+          <p class="eyebrow">PLACEMENT</p>
+          <h2>Plan interactif</h2>
+        </div>
+        <button class="ghost" (click)="refresh()">↻ Actualiser</button>
+      </div>
+      <sf-seat-map
+        [seats]="event.seats"
+        [selected]="hold()?.seat_ids ?? selected()"
+        [disabled]="busy() || !!hold() || event.status !== 'PUBLISHED'"
+        (toggled)="toggle($event)"
+      />
+    </section>
+    <aside class="panel basket">
+      <p class="eyebrow">VOTRE SÉLECTION</p>
+      <h2>Vos places</h2>
+      @if (chosen().length) {
+        <div class="chosen">
+          @for (seat of chosen(); track seat.id) {
+            <div>
+              <span
+                >Rang {{ seat.row_label }} · Place {{ seat.number
+                }}<small>{{ seat.sector }}</small></span
+              ><strong>{{ seat.price | mad }}</strong>
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="empty">
+          <p>Sélectionnez vos places sur le plan pour commencer.</p>
+        </div>
+      }
+      <div class="total">
+        <span>Total</span><strong>{{ total() | mad }}</strong>
+      </div>
+      @if (hold()) {
+        <div class="timer" role="timer" aria-label="Temps restant du blocage">
+          Blocage : {{ countdown() }}
+        </div>
+        <button
+          class="primary full"
+          [disabled]="busy() || !remaining() || pendingResult() === 'decline'"
+          (click)="confirm('success')"
+        >
+          {{
+            busy()
+              ? "Traitement…"
+              : pendingResult() === "success"
+                ? "Réessayer la confirmation"
+                : "Payer (simulation) →"
+          }}</button
+        ><button
+          class="textButton"
+          [disabled]="busy() || !remaining() || pendingResult() === 'success'"
+          (click)="confirm('decline')"
+        >
+          {{
+            pendingResult() === "decline"
+              ? "Réessayer le refus simulé"
+              : "Simuler un refus"
+          }}</button
+        ><button
+          class="ghost full"
+          [disabled]="busy() || !!pendingResult()"
+          (click)="release()"
+        >
+          Libérer mes places
+        </button>
+      } @else {
+        <button
+          class="primary full"
+          [disabled]="
+            !selected().length ||
+            busy() ||
+            event.status !== 'PUBLISHED' ||
+            (!!auth.user() && !auth.isClient())
+          "
+          (click)="reserve()"
+        >
+          {{
+            busy()
+              ? "Réservation…"
+              : auth.user()
+                ? "Bloquer ces places"
+                : "Se connecter pour réserver"
+          }}
+        </button>
+      }
+      @if (auth.user() && !auth.isClient()) {
+        <p class="error">La réservation nécessite un compte client.</p>
+      }
+      <p class="fineprint">Paiement fictif · Aucun numéro bancaire demandé</p>
+    </aside>
+  </div>
+}

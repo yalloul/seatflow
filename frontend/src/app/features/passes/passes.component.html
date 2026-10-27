@@ -1,0 +1,90 @@
+<section class="section">
+  <p class="eyebrow">ESPACE CLIENT</p>
+  <h1>Mes abonnements</h1>
+  @if (loading()) {
+    <p role="status">Chargement…</p>
+  }
+  @if (error()) {
+    <div class="error" role="alert">
+      {{ error() }} <button class="ghost" (click)="load()">Réessayer</button>
+    </div>
+  }
+  <div class="list">
+    @for (pass of passes(); track pass.id) {
+      <div class="listRow">
+        <strong>{{ pass.name }}</strong
+        ><span>{{
+          pass.type === "FIXED"
+            ? "Place fixe : " + pass.seat_id
+            : "Accès prioritaire"
+        }}</span
+        ><span>{{
+          pass.type === "FIXED"
+            ? pass.events + " événement(s) protégé(s)"
+            : "Réservation avant l’ouverture publique"
+        }}</span>
+      </div>
+    } @empty {
+      @if (!loading() && !error()) {
+        <p>Vous ne possédez pas encore d’abonnement.</p>
+      }
+    }
+  </div>
+  <section class="panel">
+    <h2>Choisir une formule</h2>
+    <p>
+      Les billets QR d’un abonnement fixe apparaissent dans « Mes billets ». La
+      place fixe protège le même siège pour les événements de sa salle dans la
+      saison. La priorité permet de réserver pendant la fenêtre réservée aux
+      abonnés. Démonstration sans paiement réel.
+    </p>
+    <form [formGroup]="form" (ngSubmit)="buy()" class="formGrid">
+      <label
+        >Saison<select formControlName="seasonId" (change)="loadSeats()">
+          <option [ngValue]="null">Choisir une saison</option>
+          @for (season of seasons(); track season.id) {
+            <option [ngValue]="season.id">{{ season.name }}</option>
+          }
+        </select></label
+      ><label
+        >Formule<select formControlName="type">
+          <option value="PRIORITY">Accès prioritaire</option>
+          <option value="FIXED">Place fixe</option>
+        </select></label
+      >
+      @if (form.controls.type.value === "FIXED") {
+        <label
+          >Place disponible sur toute la saison<select formControlName="seatId">
+            <option [ngValue]="null">
+              {{ seatsLoading() ? "Chargement…" : "Choisir une place" }}
+            </option>
+            @for (seat of seats(); track seat.id) {
+              <option [ngValue]="seat.id">
+                {{ seat.hall }} · Rang {{ seat.row_label }} · Place
+                {{ seat.number }}
+              </option>
+            }
+          </select></label
+        >
+        @if (
+          form.controls.seasonId.value && !seatsLoading() && !seats().length
+        ) {
+          <p>Aucune place fixe disponible.</p>
+        }
+      }
+      <div class="formActions">
+        <button
+          class="primary"
+          [disabled]="
+            busy() ||
+            form.invalid ||
+            (form.controls.type.value === 'FIXED' &&
+              (!form.controls.seatId.value || seatsLoading()))
+          "
+        >
+          {{ busy() ? "Attribution…" : "Obtenir cet abonnement" }}
+        </button>
+      </div>
+    </form>
+  </section>
+</section>

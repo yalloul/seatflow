@@ -1,0 +1,110 @@
+<section class="section">
+  <p class="eyebrow">ORGANISATION</p>
+  <h1>Tableau de bord</h1>
+  @if (loading()) {
+    <p role="status">Chargement…</p>
+  }
+  @if (error()) {
+    <div class="error" role="alert">
+      {{ error() }} <button class="ghost" (click)="load()">Réessayer</button>
+    </div>
+  }
+  <h2>Salles</h2>
+  <div class="list">
+    @for (hall of halls(); track hall.id) {
+      <div class="listRow">
+        <strong>{{ hall.name }}</strong
+        ><span>{{ hall.venue }}</span
+        ><span>{{ hall.seats }} places</span>
+      </div>
+    }
+  </div>
+  <h2>Ventes par secteur</h2>
+  <div class="list">
+    @for (row of report(); track row.id + "-" + row.sector) {
+      <div class="listRow">
+        <strong>{{ row.title }}</strong
+        ><span>{{ row.sector }}</span
+        ><span>{{ row.sold }} / {{ row.capacity }} vendues</span
+        ><span>{{ row.protected }} protégées</span>
+      </div>
+    } @empty {
+      @if (!loading()) {
+        <p>Aucune vente à afficher.</p>
+      }
+    }
+  </div>
+  <section class="panel">
+    <h2>Créer un événement</h2>
+    <p>
+      Les horaires sont saisis dans le fuseau de votre navigateur puis
+      enregistrés en UTC. Le catalogue les affiche dans le fuseau
+      Africa/Casablanca. La préparation et la libération sont incluses dans les
+      conflits de salle.
+    </p>
+    <form [formGroup]="form" (ngSubmit)="create()" class="formGrid">
+      <label
+        >Titre<input formControlName="title" maxlength="160" required /></label
+      ><label
+        >Salle<select formControlName="hallId">
+          <option [ngValue]="null">Choisir une salle</option>
+          @for (hall of halls(); track hall.id) {
+            <option [ngValue]="hall.id">{{ hall.name }}</option>
+          }
+        </select></label
+      ><label class="wide"
+        >Description<textarea
+          formControlName="description"
+          rows="3"
+          maxlength="4000"
+        ></textarea></label
+      ><label
+        >Saison<select formControlName="seasonId">
+          <option [ngValue]="null">Hors saison</option>
+          @for (season of seasons(); track season.id) {
+            <option [ngValue]="season.id">{{ season.name }}</option>
+          }
+        </select></label
+      ><label
+        >Début<input
+          type="datetime-local"
+          formControlName="startsAt"
+          required /></label
+      ><label
+        >Fin<input
+          type="datetime-local"
+          formControlName="endsAt"
+          required /></label
+      ><label
+        >Préparation (minutes)<input
+          type="number"
+          min="0"
+          max="1440"
+          formControlName="setupMinutes" /></label
+      ><label
+        >Libération (minutes)<input
+          type="number"
+          min="0"
+          max="1440"
+          formControlName="teardownMinutes" /></label
+      ><label
+        >Ouverture prioritaire (facultatif)<input
+          type="datetime-local"
+          formControlName="priorityOpensAt" /></label
+      ><label
+        >Ouverture publique<input
+          type="datetime-local"
+          formControlName="publicOpensAt"
+          required
+      /></label>
+      <div class="formActions">
+        <button class="primary" [disabled]="form.invalid || busy()">
+          {{ busy() ? "Création…" : "Créer l’événement" }}
+        </button>
+        @if (created(); as id) {
+          <a [routerLink]="['/events', id]">Voir l’événement créé →</a>
+        }
+      </div>
+    </form>
+  </section>
+</section>

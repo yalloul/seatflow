@@ -5,3 +5,9 @@ frontend/dist/
 .DS_Store
 frontend/.next/
 frontend/tsconfig.tsbuildinfo
+frontend/.angular/
+frontend/out-tsc/
+frontend/coverage/
+frontend/.npm/
+
+__pycache__/

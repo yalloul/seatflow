@@ -1,3 +1,6 @@
 node_modules
 .next
+.angular
 dist
+out-tsc
+coverage
